@@ -485,17 +485,17 @@ Instructions:
     
             if (availableProcesses.Count > 0)
             {
-                [cite_start]// Select the process with the shortest remaining time (SRTF Logic) [cite: 157, 265]
+                // Select the process with the shortest remaining time (SRTF Logic) [cite: 157, 265]
                 var currentProcess = availableProcesses
                     .OrderBy(p => remainingTime[p.ProcessID])
                     .ThenBy(p => p.ArrivalTime) // Tie-breaker: whoever arrived first
                     .First();
     
-                [cite_start]// Record Response Time (First time the CPU touches the process) [cite: 255, 269]
+                // Record Response Time (First time the CPU touches the process) [cite: 255, 269]
                 if (firstExecutionTime[currentProcess.ProcessID] == null)
                     firstExecutionTime[currentProcess.ProcessID] = currentTime;
     
-                [cite_start]// Execute for 1 time unit [cite: 237, 240]
+                // Execute for 1 time unit [cite: 237, 240]
                 remainingTime[currentProcess.ProcessID]--;
                 currentTime++;
     
@@ -503,8 +503,8 @@ Instructions:
                 if (remainingTime[currentProcess.ProcessID] == 0)
                 {
                     int finishTime = currentTime;
-                    [cite_start]int turnaroundTime = finishTime - currentProcess.ArrivalTime; [cite: 252, 268]
-                    [cite_start]int waitingTime = turnaroundTime - currentProcess.BurstTime; [cite: 252, 268]
+                    int turnaroundTime = finishTime - currentProcess.ArrivalTime;
+                    int waitingTime = turnaroundTime - currentProcess.BurstTime;
     
                     results.Add(new SchedulingResult
                     {
@@ -522,7 +522,7 @@ Instructions:
             else
             {
                 // CPU is idle if no processes have arrived yet
-                [cite_start]currentTime++; [cite: 301]
+                currentTime++;
             }
         }
         return results.OrderBy(r => r.ProcessID).ToList();
