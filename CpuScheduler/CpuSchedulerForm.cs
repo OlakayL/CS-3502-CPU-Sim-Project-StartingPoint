@@ -462,6 +462,72 @@ Instructions:
             return processResults.Values.OrderBy(r => r.StartTime).ToList();
         }
 
+    private List<SchedulingResult> RunSRTFAlgorithm(List<ProcessData> processes)
+    {
+        var results = new List<SchedulingResult>();
+        int n = processes.Count;
+        
+        // 1. Initialize remaining times and tracking variables
+        var remainingTime = processes.ToDictionary(p => p.ProcessID, p => p.BurstTime);
+        var firstExecutionTime = new Dictionary<string, int?>();
+        foreach (var p in processes) firstExecutionTime[p.ProcessID] = null;
+    
+        int currentTime = 0;
+        int completed = 0;
+        
+        // 2. Main Simulation Loop
+        while (completed < n)
+        {
+            // Find all processes that have arrived and are not finished
+            var availableProcesses = processes
+                .Where(p => p.ArrivalTime <= currentTime && remainingTime[p.ProcessID] > 0)
+                .ToList();
+    
+            if (availableProcesses.Count > 0)
+            {
+                [cite_start]// Select the process with the shortest remaining time (SRTF Logic) [cite: 157, 265]
+                var currentProcess = availableProcesses
+                    .OrderBy(p => remainingTime[p.ProcessID])
+                    .ThenBy(p => p.ArrivalTime) // Tie-breaker: whoever arrived first
+                    .First();
+    
+                [cite_start]// Record Response Time (First time the CPU touches the process) [cite: 255, 269]
+                if (firstExecutionTime[currentProcess.ProcessID] == null)
+                    firstExecutionTime[currentProcess.ProcessID] = currentTime;
+    
+                [cite_start]// Execute for 1 time unit [cite: 237, 240]
+                remainingTime[currentProcess.ProcessID]--;
+                currentTime++;
+    
+                // Check if finished
+                if (remainingTime[currentProcess.ProcessID] == 0)
+                {
+                    int finishTime = currentTime;
+                    [cite_start]int turnaroundTime = finishTime - currentProcess.ArrivalTime; [cite: 252, 268]
+                    [cite_start]int waitingTime = turnaroundTime - currentProcess.BurstTime; [cite: 252, 268]
+    
+                    results.Add(new SchedulingResult
+                    {
+                        ProcessID = currentProcess.ProcessID,
+                        ArrivalTime = currentProcess.ArrivalTime,
+                        BurstTime = currentProcess.BurstTime,
+                        StartTime = (int)firstExecutionTime[currentProcess.ProcessID],
+                        FinishTime = finishTime,
+                        WaitingTime = waitingTime,
+                        TurnaroundTime = turnaroundTime
+                    });
+                    completed++;
+                }
+            }
+            else
+            {
+                // CPU is idle if no processes have arrived yet
+                [cite_start]currentTime++; [cite: 301]
+            }
+        }
+        return results.OrderBy(r => r.ProcessID).ToList();
+    }
+        
         /// <summary>
         /// STUDENTS: Data structure for algorithm results
         /// Use this to store and display scheduling algorithm outcomes
