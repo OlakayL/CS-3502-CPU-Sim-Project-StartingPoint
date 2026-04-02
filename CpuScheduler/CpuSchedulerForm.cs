@@ -527,6 +527,59 @@ Instructions:
         }
         return results.OrderBy(r => r.ProcessID).ToList();
     }
+
+    private List<SchedulingResult> RunHRRNAlgorithm(List<ProcessData> processes)
+    {
+        var results = new List<SchedulingResult>();
+        var remainingProcesses = new List<ProcessData>(processes);
+        int currentTime = 0;
+    
+        while (remainingProcesses.Count > 0)
+        {
+            // 1. Get all processes that have arrived by the current time
+            var availableProcesses = remainingProcesses
+                .Where(p => p.ArrivalTime <= currentTime)
+                .ToList();
+    
+            if (availableProcesses.Count > 0)
+            {
+                // 2. Calculate Response Ratio and pick the highest
+                var selectedProcess = availableProcesses
+                    .OrderByDescending(p => {
+                        double waitingTime = currentTime - p.ArrivalTime;
+                        return (waitingTime + p.BurstTime) / (double)p.BurstTime;
+                    })
+                    .First();
+    
+                // 3. Execute process (Non-preemptive: runs to completion)
+                int startTime = currentTime;
+                int finishTime = startTime + selectedProcess.BurstTime;
+                int turnaroundTime = finishTime - selectedProcess.ArrivalTime;
+                int waitingTimeResult = turnaroundTime - selectedProcess.BurstTime;
+    
+                results.Add(new SchedulingResult
+                {
+                    ProcessID = selectedProcess.ProcessID,
+                    ArrivalTime = selectedProcess.ArrivalTime,
+                    BurstTime = selectedProcess.BurstTime,
+                    StartTime = startTime,
+                    FinishTime = finishTime,
+                    WaitingTime = waitingTimeResult,
+                    TurnaroundTime = turnaroundTime
+                });
+    
+                // 4. Update state
+                currentTime = finishTime;
+                remainingProcesses.Remove(selectedProcess);
+            }
+            else
+            {
+                // If no process has arrived, jump to the arrival of the next process
+                currentTime = remainingProcesses.Min(p => p.ArrivalTime);
+            }
+        }
+        return results.OrderBy(r => r.ProcessID).ToList();
+    }
         
         /// <summary>
         /// STUDENTS: Data structure for algorithm results
