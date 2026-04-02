@@ -590,10 +590,18 @@ Instructions:
             // TODO: STUDENTS - Add performance metrics calculation and display here
             // Required metrics for your project report:
             // 1. Average Waiting Time (AWT) - sum of all waiting times / number of processes
+            int processCount = results.Count;
+            int totalBurstTime = results.Sum(r => r.BurstTime);
+            int totalTime = results.Max(r => r.FinishTime);
+            double awt = results.Average(r => r.WaitingTime);
             // 2. Average Turnaround Time (ATT) - sum of all turnaround times / number of processes  
+            double att = results.Average(r => r.TurnaroundTime);
             // 3. CPU Utilization (%) - (total burst time / total time) * 100
+            double cpuUtilization = ((double)totalBurstTime / totalTime) * 100;
             // 4. Throughput (processes/second) - number of processes / total time
+            double throughput = (double)processCount / totalTime;
             // 5. Response Time (RT) [Optional] - time from arrival to first execution
+            double avgResponseTime = results.Average(r => (double)r.StartTime - r.ArrivalTime);
             // Display these metrics in the results view for comparison between algorithms
             
             // TODO: STUDENTS - Add CSV export functionality for results data
@@ -602,6 +610,56 @@ Instructions:
             // - Performance metrics summary for each algorithm tested
             // Reference the SaveData_Click() method above to learn CSV file handling
             // This will help you create tables/charts for your project report
+
+            private void btnExportResults_Click(object sender, EventArgs e)
+            {
+                if (results == null || results.Count == 0)
+                {
+                    MessageBox.Show("No results available to export. Please run a simulation first.", "Export Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+            
+                using (SaveFileDialog saveFileDialog = new SaveFileDialog())
+                {
+                    saveFileDialog.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
+                    saveFileDialog.Title = "Export Scheduling Results";
+                    saveFileDialog.FileName = $"Scheduling_Results_{currentAlgorithm}.csv";
+            
+                    if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        try
+                        {
+                            using (StreamWriter sw = new StreamWriter(saveFileDialog.FileName))
+                            {
+                                // --- SECTION 1: Summary Metrics ---
+                                sw.WriteLine("PERFORMANCE SUMMARY");
+                                sw.WriteLine($"Algorithm,{currentAlgorithm}");
+                                sw.WriteLine($"Avg Waiting Time,{awt:F2}");
+                                sw.WriteLine($"Avg Turnaround Time,{att:F2}");
+                                sw.WriteLine($"CPU Utilization,{cpuUtilization:F2}%");
+                                sw.WriteLine($"Throughput,{throughput:F4}");
+                                sw.WriteLine(); // Empty line for spacing
+            
+                                // --- SECTION 2: Individual Process Results ---
+                                sw.WriteLine("INDIVIDUAL PROCESS DATA");
+                                // Header row
+                                sw.WriteLine("Process ID,Arrival Time,Burst Time,Start Time,Finish Time,Waiting Time,Turnaround Time");
+            
+                                // Data rows from the results list
+                                foreach (var res in results)
+                                {
+                                    sw.WriteLine($"{res.ProcessID},{res.ArrivalTime},{res.BurstTime},{res.StartTime},{res.FinishTime},{res.WaitingTime},{res.TurnaroundTime}");
+                                }
+                            }
+                            MessageBox.Show("Results exported successfully!", "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Error exporting data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
